@@ -4,7 +4,25 @@ import { scrapePublicProfiles, synthesizeAgentFromSources } from '@/lib/scraper'
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { linkedinUrl, instagramUrl, headline, name, location, avatarUrl, industry } = body;
+    const {
+      linkedinUrl,
+      instagramUrl,
+      headline,
+      name,
+      company,
+      education,
+      skills,
+      location,
+      avatarUrl,
+      industry,
+      musicTaste,
+      weekendRoutine,
+      coffeeOrFoodRitual,
+      greenFlags,
+      unusualQuirks,
+      hobbies,
+      interests
+    } = body;
 
     if (!linkedinUrl || !instagramUrl) {
       return NextResponse.json(
@@ -16,9 +34,19 @@ export async function POST(req: NextRequest) {
     const raw = await scrapePublicProfiles(linkedinUrl, instagramUrl, {
       name,
       headline,
+      company,
+      education,
+      skills,
       location,
       avatarUrl,
-      industry
+      industry,
+      musicTaste,
+      weekendRoutine,
+      coffeeOrFoodRitual,
+      greenFlags,
+      unusualQuirks,
+      hobbies,
+      interests
     });
 
     const synthesizedPerson = synthesizeAgentFromSources(raw);

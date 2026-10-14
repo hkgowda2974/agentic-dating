@@ -7,14 +7,23 @@ export interface ExtractedSourceData {
   linkedinSummary: {
     headline: string;
     role: string;
+    company?: string;
+    education?: string;
+    skills?: string[];
     industry: string;
+    yearsOfExperience?: string;
     professionalValues: string[];
     intellectualFocus: string;
   };
   instagramSummary: {
     handle: string;
+    bioQuote?: string;
     vibe: string;
     aesthetic: string;
+    musicTaste?: string[];
+    weekendRoutine?: string;
+    coffeeOrFoodRitual?: string;
+    travelFootprint?: string[];
     lifestyleKeywords: string[];
     socialEnergy: 'Introvert' | 'Ambivert' | 'Extrovert';
   };
@@ -25,11 +34,15 @@ export interface AgentProfile {
   hobbies: string[];
   interests: string[];
   communicationStyle: string;
+  textingCadence?: string;
   dealbreakers: string[];
+  greenFlags?: string[];
   loveLanguage: string;
   energyLevel: string;
   datePhilosophy: string;
   humorStyle: string;
+  idealFirstDateItinerary?: string;
+  unusualQuirks?: string[];
 }
 
 export interface Person {
@@ -65,11 +78,11 @@ export interface DateSimulation {
   };
   dialogue: DateDialogueTurn[];
   metrics: {
-    chemistryScore: number; // 0 - 100
-    intellectualSynergy: number; // 0 - 100
-    lifestyleAlignment: number; // 0 - 100
-    vibeMatch: number; // 0 - 100
-    overallCompatibility: number; // 0 - 100
+    chemistryScore: number;
+    intellectualSynergy: number;
+    lifestyleAlignment: number;
+    vibeMatch: number;
+    overallCompatibility: number;
   };
   sharedInterests: string[];
   potentialFrictions: string[];

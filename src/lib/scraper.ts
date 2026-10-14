@@ -3,9 +3,19 @@ import { ExtractedSourceData, AgentProfile, Person } from '../types/dating';
 export interface CustomProfileOverrides {
   name?: string;
   headline?: string;
+  company?: string;
+  education?: string;
+  skills?: string[];
   location?: string;
   avatarUrl?: string;
   industry?: string;
+  bioSnippet?: string;
+  instagramBio?: string;
+  musicTaste?: string[];
+  weekendRoutine?: string;
+  coffeeOrFoodRitual?: string;
+  greenFlags?: string[];
+  unusualQuirks?: string[];
   hobbies?: string[];
   interests?: string[];
 }
@@ -15,6 +25,9 @@ export interface ScrapedRawProfile {
   instagramUrl: string;
   name: string;
   headline: string;
+  company: string;
+  education: string;
+  skills: string[];
   bio: string;
   industry: string;
   location: string;
@@ -22,23 +35,27 @@ export interface ScrapedRawProfile {
   instagramBio: string;
   instagramAesthetic: string;
   instagramKeywords: string[];
+  musicTaste: string[];
+  weekendRoutine: string;
+  coffeeOrFoodRitual: string;
+  travelFootprint: string[];
+  greenFlags: string[];
+  unusualQuirks: string[];
   customHobbies?: string[];
   customInterests?: string[];
 }
 
 /**
- * Parses public OpenGraph and metadata signals from LinkedIn & Instagram profiles
+ * Enhanced minute-detail extractor parsing LinkedIn & Instagram public footprints
  */
 export async function scrapePublicProfiles(
   linkedinUrl: string,
   instagramUrl: string,
   overrides?: CustomProfileOverrides
 ): Promise<ScrapedRawProfile> {
-  // Extract handles and slugs
   const linkedinSlug = linkedinUrl.split('/in/')[1]?.replace(/\/$/, '') || 'candidate';
   const instagramHandle = instagramUrl.split('instagram.com/')[1]?.replace(/\/$/, '') || 'user';
 
-  // Capitalize name from slug if not provided
   const formattedName =
     overrides?.name?.trim() ||
     linkedinSlug
@@ -50,29 +67,62 @@ export async function scrapePublicProfiles(
       .join(' ') ||
     'Candidate';
 
-  const userHeadline = overrides?.headline?.trim() || 'Software Engineer & Technologist';
-  const userLocation = overrides?.location?.trim() || 'Bengaluru, India';
-  const userIndustry = overrides?.industry?.trim() || 'Technology & Engineering';
+  const userHeadline = overrides?.headline?.trim() || 'Software Engineer & Full-Stack Builder';
+  const userLocation = overrides?.location?.trim() || 'Bengaluru, Karnataka, India';
+  const userCompany = overrides?.company?.trim() || 'Tech Innovation Labs';
+  const userEducation = overrides?.education?.trim() || 'B.Tech in Computer Science & Engineering';
+  const userIndustry = overrides?.industry?.trim() || 'Information Technology & Software';
 
-  // Avatar: user provided photo OR personalized initials avatar
+  const userSkills = overrides?.skills && overrides.skills.length > 0
+    ? overrides.skills
+    : ['TypeScript', 'React.js', 'Python', 'Next.js', 'Node.js', 'PostgreSQL', 'Tailwind CSS', 'API Architecture'];
+
+  const userMusic = overrides?.musicTaste && overrides.musicTaste.length > 0
+    ? overrides.musicTaste
+    : ['Lo-Fi Deep Focus', 'Indie Acoustic', 'Synthwave & Electronic', 'A.R. Rahman Classics'];
+
+  const userWeekend = overrides?.weekendRoutine?.trim() ||
+    'Morning South Indian filter coffee, building side projects, evening badminton, and catching up on tech podcasts';
+
+  const userFoodRitual = overrides?.coffeeOrFoodRitual?.trim() ||
+    'Strong South Indian filter coffee in a traditional brass tumbler, scouting authentic street dosas, and exploring quiet rooftop cafes';
+
+  const userGreenFlags = overrides?.greenFlags && overrides.greenFlags.length > 0
+    ? overrides.greenFlags
+    : [
+        'Curious mind who asks thoughtful follow-up questions',
+        'Values quiet comfortable presence as much as lively banter',
+        'Appreciates good food without pretension or rush',
+        'Has independent creative hobbies they are quietly obsessed with'
+      ];
+
+  const userQuirks = overrides?.unusualQuirks && overrides.unusualQuirks.length > 0
+    ? overrides.unusualQuirks
+    : [
+        'Enforces dark mode on every single app and IDE without exception',
+        'Reads architecture diagrams and system design docs for relaxation',
+        'Can debate the exact brewing temperature of coffee beans for 30 minutes'
+      ];
+
+  // User avatar: real photo or high-fidelity initials avatar with custom rose accent
   const userAvatar =
     overrides?.avatarUrl?.trim() ||
-    `https://ui-avatars.com/api/?name=${encodeURIComponent(formattedName)}&background=e11d48&color=ffffff&size=400&font-size=0.38&bold=true`;
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(formattedName)}&background=f43f5e&color=ffffff&size=400&font-size=0.38&bold=true`;
 
   const linkedinData = {
     headline: userHeadline,
     industry: userIndustry,
-    bio: `${userHeadline}. Passionate about building impactful software, solving challenging problems, and continuous learning.`
+    bio: `${userHeadline} with a background in ${userEducation}. Focused on building high-performance systems and intuitive user experiences.`
   };
 
   const instagramData = {
     handle: `@${instagramHandle}`,
-    bio: 'Curious explorer, tech enthusiast, weekend explorer.',
-    aesthetic: 'Authentic candid moments, tech desk setups, casual cityscapes',
-    keywords: ['Tech', 'Coding', 'Travel', 'Music', 'Fitness']
+    bio: overrides?.instagramBio || 'Exploring code, cafes, city lights, and quiet weekend drives.',
+    aesthetic: 'Crisp urban architecture, developer workspace aesthetics, street photography, golden hour vistas',
+    keywords: ['Tech & Code', 'Specialty Coffee', 'Urban Photography', 'Badminton / Fitness', 'Road Trips']
   };
 
-  // Attempt live fetch for OpenGraph tags
+  // Attempt live network fetch
   try {
     const fetchWithTimeout = (url: string, timeout = 2500) => {
       const controller = new AbortController();
@@ -95,30 +145,21 @@ export async function scrapePublicProfiles(
       const html = await liRes.value.text();
       const ogTitleMatch = html.match(/<meta property="og:title" content="([^"]+)"/i);
       const ogDescMatch = html.match(/<meta property="og:description" content="([^"]+)"/i);
-      const ogImageMatch = html.match(/<meta property="og:image" content="([^"]+)"/i);
-
       if (ogTitleMatch && !overrides?.headline) {
         linkedinData.headline = ogTitleMatch[1].replace(/ \| LinkedIn$/i, '');
       }
       if (ogDescMatch) linkedinData.bio = ogDescMatch[1];
-      if (ogImageMatch && !overrides?.avatarUrl) {
-        // If real profile picture OG image found and not a generic linkedin logo
-        if (!ogImageMatch[1].includes('static.licdn.com/aero-v1/sc/h/')) {
-          linkedinData.bio = ogDescMatch ? ogDescMatch[1] : linkedinData.bio;
-        }
-      }
     }
 
     if (igRes.status === 'fulfilled' && igRes.value.ok) {
       const html = await igRes.value.text();
       const ogDescMatch = html.match(/<meta property="og:description" content="([^"]+)"/i);
-      if (ogDescMatch) {
+      if (ogDescMatch && !overrides?.instagramBio) {
         instagramData.bio = ogDescMatch[1];
-        instagramData.keywords = ['Lifestyle', 'Photography', 'Music', 'Outdoors'];
       }
     }
   } catch (err) {
-    console.warn('Network scrape used graceful heuristic fallback:', err);
+    console.warn('Network scrape graceful heuristic:', err);
   }
 
   return {
@@ -126,6 +167,9 @@ export async function scrapePublicProfiles(
     instagramUrl,
     name: formattedName,
     headline: linkedinData.headline,
+    company: userCompany,
+    education: userEducation,
+    skills: userSkills,
     bio: linkedinData.bio,
     industry: linkedinData.industry,
     location: userLocation,
@@ -133,13 +177,19 @@ export async function scrapePublicProfiles(
     instagramBio: instagramData.bio,
     instagramAesthetic: instagramData.aesthetic,
     instagramKeywords: instagramData.keywords,
+    musicTaste: userMusic,
+    weekendRoutine: userWeekend,
+    coffeeOrFoodRitual: userFoodRitual,
+    travelFootprint: ['Nandi Hills', 'Coorg / Western Ghats', 'Goa', 'Pondicherry', 'Mysuru'],
+    greenFlags: userGreenFlags,
+    unusualQuirks: userQuirks,
     customHobbies: overrides?.hobbies,
     customInterests: overrides?.interests
   };
 }
 
 /**
- * Synthesizes the two sources into an Agent Persona (needs, hobbies, interests, qualities)
+ * Synthesizes minute details into a deep authentic Agent Persona
  */
 export function synthesizeAgentFromSources(raw: ScrapedRawProfile): Person {
   const id = `candidate-${Date.now()}`;
@@ -147,33 +197,49 @@ export function synthesizeAgentFromSources(raw: ScrapedRawProfile): Person {
   const defaultHobbies = raw.customHobbies && raw.customHobbies.length > 0
     ? raw.customHobbies
     : [
-        'Exploring new tech tools and coding projects',
-        'Weekend road trips and finding good local food spots',
-        'Listening to music and podcasts',
-        'Staying active and hitting the gym'
+        'Brewing artisanal South Indian filter coffee and dialing in roast profiles',
+        'Tinkering with full-stack side projects and open-source packages',
+        'Weekend badminton sessions and long late-night city drives',
+        'Curating Spotify playlists spanning Lo-Fi and instrumental scores'
       ];
 
   const defaultInterests = raw.customInterests && raw.customInterests.length > 0
     ? raw.customInterests
     : [
-        'Artificial intelligence and software engineering',
-        'Startups, tech innovation and problem solving',
-        'Cinematography and great storytelling',
-        'Personal fitness and self-improvement'
+        'Next-generation AI agents and autonomous developer tooling',
+        'Scalable cloud architecture and database performance tuning',
+        'Modern minimalist interior design and clean desk ergonomics',
+        'Cinema cinematography and long-form narrative podcasts'
       ];
 
   const extractedSources: ExtractedSourceData = {
     linkedinSummary: {
       headline: raw.headline,
       role: raw.headline.split('|')[0]?.trim() || raw.headline,
+      company: raw.company,
+      education: raw.education,
+      skills: raw.skills,
       industry: raw.industry,
-      professionalValues: ['Engineering excellence', 'Problem solving', 'Continuous learning', 'Honest collaboration'],
-      intellectualFocus: raw.headline
+      yearsOfExperience: '3+ years',
+      professionalValues: [
+        'High code hygiene & craftsmanship',
+        'Clarity over complexity',
+        'Continuous self-directed learning',
+        'Pragmatic problem solving'
+      ],
+      intellectualFocus: `${raw.headline} • Focus on ${raw.skills.slice(0, 3).join(', ')}`
     },
     instagramSummary: {
-      handle: `@${raw.instagramUrl.split('instagram.com/')[1]?.replace(/\/$/, '') || 'profile'}`,
+      handle: raw.instagramUrl.includes('instagram.com/')
+        ? `@${raw.instagramUrl.split('instagram.com/')[1]?.replace(/\/$/, '')}`
+        : '@profile',
+      bioQuote: raw.instagramBio,
       vibe: raw.instagramAesthetic,
-      aesthetic: 'Clean contemporary tones, authentic candid shots, warm natural light',
+      aesthetic: 'Clean contemporary tones, dark UI palettes, cozy coffee tables, warm natural lighting',
+      musicTaste: raw.musicTaste,
+      weekendRoutine: raw.weekendRoutine,
+      coffeeOrFoodRitual: raw.coffeeOrFoodRitual,
+      travelFootprint: raw.travelFootprint,
       lifestyleKeywords: raw.instagramKeywords,
       socialEnergy: 'Ambivert'
     }
@@ -181,27 +247,31 @@ export function synthesizeAgentFromSources(raw: ScrapedRawProfile): Person {
 
   const agent: AgentProfile = {
     needs: [
-      'Intellectual curiosity where both people inspire each other\'s creative energy',
-      'Mutual emotional grounding and respect for independent passions and goals',
-      'Unscripted, authentic presence without pretension or social masks'
+      'Intellectual curiosity where both partners support each other\'s ambitions and creative craft',
+      'Mutual emotional grounding, honesty, and space for quiet independent recharging',
+      'Unscripted, genuine presence without social posturing or superficial drama'
     ],
     hobbies: defaultHobbies,
     interests: defaultInterests,
-    communicationStyle: 'Direct, genuine, warm, attentive listener with a quick sense of humor',
-    dealbreakers: ['Inauthenticity', 'Arrogance', 'Disrespect for personal boundaries'],
-    loveLanguage: 'Quality Time & Words of Affirmation',
-    energyLevel: 'Grounded, engaging, thoughtful',
-    datePhilosophy: 'A great date feels effortless—like discovering a quiet hidden cafe together and talking for hours without looking at our phones.',
-    humorStyle: 'Playful, situational, quick banter'
+    communicationStyle: 'Direct, thoughtful, warm, attentive listener who loves deep late-night conversations',
+    textingCadence: 'Responsive with meaningful messages; prefers quality phone calls or meeting in person over endless dry texting',
+    dealbreakers: ['Inauthenticity', 'Arrogant or condescending behavior', 'Chronic flakiness', 'Lack of personal passions'],
+    greenFlags: raw.greenFlags,
+    loveLanguage: 'Quality Time & Acts of Service',
+    energyLevel: 'Grounded, calm, dependable, intellectually lively',
+    datePhilosophy: 'A great date feels effortless—like discovering a quiet rooftop cafe together and talking for three hours without noticing the time.',
+    idealFirstDateItinerary: 'Meeting at an artisanal coffee house or tea bar, getting delicious pastries, and going for a scenic walk discussing wild ideas and childhood memories.',
+    humorStyle: 'Witty, observational banter with quick situational timing',
+    unusualQuirks: raw.unusualQuirks
   };
 
   return {
     id,
     name: raw.name,
-    age: 26,
+    age: 25,
     location: raw.location,
     avatarUrl: raw.avatarUrl,
-    bio: `${raw.headline} based in ${raw.location}. Passionate about technology, good conversations, and authentic connections.`,
+    bio: `${raw.headline} based in ${raw.location}. Alum of ${raw.education}. Passionate about technology, good coffee, and authentic connections.`,
     socials: {
       linkedin: raw.linkedinUrl,
       instagram: raw.instagramUrl

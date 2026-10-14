@@ -338,27 +338,32 @@ export function simulateDateBetweenAgents(personA: Person, personB: Person): Dat
 
   const venue = venues[(personA.name.length + personB.name.length) % venues.length];
 
+  const personAFood = personA.extractedSources.instagramSummary.coffeeOrFoodRitual || 'artisanal pour-over coffee';
+  const personBFood = personB.extractedSources.instagramSummary.coffeeOrFoodRitual || 'a good espresso and pastries';
+  const personASkill = personA.extractedSources.linkedinSummary.skills?.[0] || 'crafting elegant systems';
+  const personBSkill = personB.extractedSources.linkedinSummary.skills?.[0] || 'solving hard engineering problems';
+
   const turns: DateDialogueTurn[] = [
     {
       speakerId: personA.id,
       speakerName: personA.name,
-      text: `It's great to finally meet you in person. Your background in ${personB.extractedSources.linkedinSummary.industry} caught my eye, but seeing your passion for ${personB.agent.hobbies[0] || 'creative pursuits'} is what made me really curious.`,
-      innerThought: `Checking if our energy matches in real life beyond the digital footprint.`,
+      text: `It's so great to finally meet you in person. Seeing your focus in ${personB.extractedSources.linkedinSummary.role} and your work with ${personBSkill} caught my eye, but finding out you're into ${personB.agent.hobbies[0] || 'creative crafts'} made me really excited for this.`,
+      innerThought: `Checking if our energy matches in real life beyond social footprints.`,
       timestamp: '18:30',
       reaction: 'Warm smile'
     },
     {
       speakerId: personB.id,
       speakerName: personB.name,
-      text: `Likewise! I was reading about your work with ${personA.extractedSources.linkedinSummary.intellectualFocus.slice(0, 35)}... but honestly, the fact that your downtime is all about ${personA.agent.hobbies[0] || 'authentic crafts'} made you stand out.`,
-      innerThought: `They seem genuine and grounded. Not just reciting their resume.`,
+      text: `Likewise! I was reading about your experience with ${personASkill} and ${personA.location}... but honestly, what stood out was your love for ${personA.agent.hobbies[0] || 'authentic crafts'}. That shows real taste.`,
+      innerThought: `They seem genuine, unpretentious, and completely grounded.`,
       timestamp: '18:32',
       reaction: 'Eyes lighting up'
     },
     {
       speakerId: personA.id,
       speakerName: personA.name,
-      text: `I've always believed that how we spend our unstructured hours tells the real story. My dating philosophy has always been: "${personA.agent.datePhilosophy}"`,
+      text: `I've always believed that how we spend our unstructured hours tells the real story. For me, weekends are all about ${personAFood}. My core dating philosophy is: "${personA.agent.datePhilosophy}"`,
       innerThought: `Putting our core date value on the table early to see how they respond.`,
       timestamp: '18:35',
       reaction: 'Leans forward attentively'
@@ -366,15 +371,15 @@ export function simulateDateBetweenAgents(personA: Person, personB: Person): Dat
     {
       speakerId: personB.id,
       speakerName: personB.name,
-      text: `That resonates so much with me. For me, "${personB.agent.datePhilosophy}" We get so caught up in momentum that slowing down together is the real luxury.`,
-      innerThought: `Huge relief—we value the exact same conversational pacing.`,
+      text: `That hits so close to home! For me, "${personB.agent.datePhilosophy}" And having ${personBFood} in the mix makes everything better. We get so caught up in our screens that slowing down together is the real luxury.`,
+      innerThought: `Huge relief—we value the exact same conversational pacing and warmth.`,
       timestamp: '18:38',
       reaction: 'Nods in agreement'
     },
     {
       speakerId: personA.id,
       speakerName: personA.name,
-      text: `What's something you're obsessed with right now that you don't usually get to talk about at cocktail parties or conferences?`,
+      text: `What's a quirky obsession or rabbit hole you've been down lately that you don't usually get to talk about with most people?`,
       innerThought: `Testing depth and curiosity over superficial small talk.`,
       timestamp: '18:41',
       reaction: 'Curious smile'
@@ -382,7 +387,7 @@ export function simulateDateBetweenAgents(personA: Person, personB: Person): Dat
     {
       speakerId: personB.id,
       speakerName: personB.name,
-      text: `Honestly? Deep-diving into ${personB.agent.interests[0] || 'unconventional history'}. Most people's eyes glaze over, but I could debate it for hours!`,
+      text: `Honestly? Deep-diving into ${personB.agent.interests[0] || 'unconventional history'} and listening to ${personB.extractedSources.instagramSummary.musicTaste?.[0] || 'great indie music'} on repeat. Most people's eyes glaze over, but I could talk about it for hours!`,
       innerThought: `Taking a leap of vulnerability to see if they match my intensity.`,
       timestamp: '18:44',
       reaction: 'Laughs freely'
