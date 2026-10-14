@@ -1,5 +1,15 @@
 import { ExtractedSourceData, AgentProfile, Person } from '../types/dating';
 
+export interface CustomProfileOverrides {
+  name?: string;
+  headline?: string;
+  location?: string;
+  avatarUrl?: string;
+  industry?: string;
+  hobbies?: string[];
+  interests?: string[];
+}
+
 export interface ScrapedRawProfile {
   linkedinUrl: string;
   instagramUrl: string;
@@ -7,56 +17,75 @@ export interface ScrapedRawProfile {
   headline: string;
   bio: string;
   industry: string;
+  location: string;
   avatarUrl: string;
   instagramBio: string;
   instagramAesthetic: string;
   instagramKeywords: string[];
+  customHobbies?: string[];
+  customInterests?: string[];
 }
 
 /**
  * Parses public OpenGraph and metadata signals from LinkedIn & Instagram profiles
  */
-export async function scrapePublicProfiles(linkedinUrl: string, instagramUrl: string): Promise<ScrapedRawProfile> {
+export async function scrapePublicProfiles(
+  linkedinUrl: string,
+  instagramUrl: string,
+  overrides?: CustomProfileOverrides
+): Promise<ScrapedRawProfile> {
   // Extract handles and slugs
   const linkedinSlug = linkedinUrl.split('/in/')[1]?.replace(/\/$/, '') || 'candidate';
   const instagramHandle = instagramUrl.split('instagram.com/')[1]?.replace(/\/$/, '') || 'user';
 
-  // Capitalize name from slug
-  const formattedName = linkedinSlug
-    .replace(/-/g, ' ')
-    .replace(/[0-9]/g, '')
-    .trim()
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ') || 'Candidate';
+  // Capitalize name from slug if not provided
+  const formattedName =
+    overrides?.name?.trim() ||
+    linkedinSlug
+      .replace(/-/g, ' ')
+      .replace(/[0-9]/g, '')
+      .trim()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ') ||
+    'Candidate';
+
+  const userHeadline = overrides?.headline?.trim() || 'Software Engineer & Technologist';
+  const userLocation = overrides?.location?.trim() || 'Bengaluru, India';
+  const userIndustry = overrides?.industry?.trim() || 'Technology & Engineering';
+
+  // Avatar: user provided photo OR personalized initials avatar
+  const userAvatar =
+    overrides?.avatarUrl?.trim() ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(formattedName)}&background=e11d48&color=ffffff&size=400&font-size=0.38&bold=true`;
 
   const linkedinData = {
-    headline: 'Founder & Innovator',
-    industry: 'Technology & Design',
-    bio: 'Dedicated builder focused on creating meaningful real-world impact and high-leverage products.'
+    headline: userHeadline,
+    industry: userIndustry,
+    bio: `${userHeadline}. Passionate about building impactful software, solving challenging problems, and continuous learning.`
   };
 
   const instagramData = {
     handle: `@${instagramHandle}`,
-    bio: 'Curious explorer, coffee lover, weekend adventurer.',
-    aesthetic: 'Minimalist photography, architectural vistas, cozy cafes',
-    keywords: ['Travel', 'Art', 'Coffee', 'Design', 'Reading']
+    bio: 'Curious explorer, tech enthusiast, weekend explorer.',
+    aesthetic: 'Authentic candid moments, tech desk setups, casual cityscapes',
+    keywords: ['Tech', 'Coding', 'Travel', 'Music', 'Fitness']
   };
 
-  // Attempt real live fetch for OpenGraph tags
+  // Attempt live fetch for OpenGraph tags
   try {
-    const fetchWithTimeout = (url: string, timeout = 3000) => {
+    const fetchWithTimeout = (url: string, timeout = 2500) => {
       const controller = new AbortController();
       const id = setTimeout(() => controller.abort(), timeout);
       return fetch(url, {
         signal: controller.signal,
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         }
       }).finally(() => clearTimeout(id));
     };
 
-    // Public fetch attempts (non-blocking fallback)
     const [liRes, igRes] = await Promise.allSettled([
       fetchWithTimeout(linkedinUrl),
       fetchWithTimeout(instagramUrl)
@@ -66,8 +95,18 @@ export async function scrapePublicProfiles(linkedinUrl: string, instagramUrl: st
       const html = await liRes.value.text();
       const ogTitleMatch = html.match(/<meta property="og:title" content="([^"]+)"/i);
       const ogDescMatch = html.match(/<meta property="og:description" content="([^"]+)"/i);
-      if (ogTitleMatch) linkedinData.headline = ogTitleMatch[1];
+      const ogImageMatch = html.match(/<meta property="og:image" content="([^"]+)"/i);
+
+      if (ogTitleMatch && !overrides?.headline) {
+        linkedinData.headline = ogTitleMatch[1].replace(/ \| LinkedIn$/i, '');
+      }
       if (ogDescMatch) linkedinData.bio = ogDescMatch[1];
+      if (ogImageMatch && !overrides?.avatarUrl) {
+        // If real profile picture OG image found and not a generic linkedin logo
+        if (!ogImageMatch[1].includes('static.licdn.com/aero-v1/sc/h/')) {
+          linkedinData.bio = ogDescMatch ? ogDescMatch[1] : linkedinData.bio;
+        }
+      }
     }
 
     if (igRes.status === 'fulfilled' && igRes.value.ok) {
@@ -75,7 +114,7 @@ export async function scrapePublicProfiles(linkedinUrl: string, instagramUrl: st
       const ogDescMatch = html.match(/<meta property="og:description" content="([^"]+)"/i);
       if (ogDescMatch) {
         instagramData.bio = ogDescMatch[1];
-        instagramData.keywords = ['Photography', 'Travel', 'Lifestyle', 'Visual Arts'];
+        instagramData.keywords = ['Lifestyle', 'Photography', 'Music', 'Outdoors'];
       }
     }
   } catch (err) {
@@ -89,10 +128,13 @@ export async function scrapePublicProfiles(linkedinUrl: string, instagramUrl: st
     headline: linkedinData.headline,
     bio: linkedinData.bio,
     industry: linkedinData.industry,
-    avatarUrl: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80`,
+    location: userLocation,
+    avatarUrl: userAvatar,
     instagramBio: instagramData.bio,
     instagramAesthetic: instagramData.aesthetic,
-    instagramKeywords: instagramData.keywords
+    instagramKeywords: instagramData.keywords,
+    customHobbies: overrides?.hobbies,
+    customInterests: overrides?.interests
   };
 }
 
@@ -102,12 +144,30 @@ export async function scrapePublicProfiles(linkedinUrl: string, instagramUrl: st
 export function synthesizeAgentFromSources(raw: ScrapedRawProfile): Person {
   const id = `candidate-${Date.now()}`;
 
+  const defaultHobbies = raw.customHobbies && raw.customHobbies.length > 0
+    ? raw.customHobbies
+    : [
+        'Exploring new tech tools and coding projects',
+        'Weekend road trips and finding good local food spots',
+        'Listening to music and podcasts',
+        'Staying active and hitting the gym'
+      ];
+
+  const defaultInterests = raw.customInterests && raw.customInterests.length > 0
+    ? raw.customInterests
+    : [
+        'Artificial intelligence and software engineering',
+        'Startups, tech innovation and problem solving',
+        'Cinematography and great storytelling',
+        'Personal fitness and self-improvement'
+      ];
+
   const extractedSources: ExtractedSourceData = {
     linkedinSummary: {
       headline: raw.headline,
-      role: raw.headline.split('|')[0]?.trim() || 'Leader',
+      role: raw.headline.split('|')[0]?.trim() || raw.headline,
       industry: raw.industry,
-      professionalValues: ['High-agency focus', 'Intellectual craftsmanship', 'Relentless learning'],
+      professionalValues: ['Engineering excellence', 'Problem solving', 'Continuous learning', 'Honest collaboration'],
       intellectualFocus: raw.headline
     },
     instagramSummary: {
@@ -122,36 +182,26 @@ export function synthesizeAgentFromSources(raw: ScrapedRawProfile): Person {
   const agent: AgentProfile = {
     needs: [
       'Intellectual curiosity where both people inspire each other\'s creative energy',
-      'Mutual emotional grounding and respect for independent passions',
-      'Unscripted, authentic presence without digital distraction'
+      'Mutual emotional grounding and respect for independent passions and goals',
+      'Unscripted, authentic presence without pretension or social masks'
     ],
-    hobbies: [
-      'Exploring independent coffee roasters and matcha bars',
-      'Weekend cycling or scenic hiking',
-      'Reading non-fiction and cultural philosophy',
-      'Documenting architectural details and art galleries'
-    ],
-    interests: [
-      'Emerging creative technologies and design systems',
-      'Culinary gastronomy and fermentation science',
-      'Urban pedestrian infrastructure and green cities',
-      'Contemporary art and print typography'
-    ],
-    communicationStyle: 'Thoughtful, curious, warm, attentive listener with a quick sense of humor',
-    dealbreakers: ['Inauthenticity', 'Chronic negativity', 'Closed-mindedness'],
+    hobbies: defaultHobbies,
+    interests: defaultInterests,
+    communicationStyle: 'Direct, genuine, warm, attentive listener with a quick sense of humor',
+    dealbreakers: ['Inauthenticity', 'Arrogance', 'Disrespect for personal boundaries'],
     loveLanguage: 'Quality Time & Words of Affirmation',
-    energyLevel: 'Balanced, engaging, grounded',
-    datePhilosophy: 'A great date feels effortless—like discovering a quiet hidden terrace together and talking for hours.',
-    humorStyle: 'Dry, witty observational banter'
+    energyLevel: 'Grounded, engaging, thoughtful',
+    datePhilosophy: 'A great date feels effortless—like discovering a quiet hidden cafe together and talking for hours without looking at our phones.',
+    humorStyle: 'Playful, situational, quick banter'
   };
 
   return {
     id,
     name: raw.name,
-    age: 30,
-    location: 'San Francisco, CA',
+    age: 26,
+    location: raw.location,
     avatarUrl: raw.avatarUrl,
-    bio: `${raw.headline}. Passionate about exploring ideas, good food, and authentic connections.`,
+    bio: `${raw.headline} based in ${raw.location}. Passionate about technology, good conversations, and authentic connections.`,
     socials: {
       linkedin: raw.linkedinUrl,
       instagram: raw.instagramUrl

@@ -4,7 +4,7 @@ import { scrapePublicProfiles, synthesizeAgentFromSources } from '@/lib/scraper'
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { linkedinUrl, instagramUrl } = body;
+    const { linkedinUrl, instagramUrl, headline, name, location, avatarUrl, industry } = body;
 
     if (!linkedinUrl || !instagramUrl) {
       return NextResponse.json(
@@ -13,7 +13,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const raw = await scrapePublicProfiles(linkedinUrl, instagramUrl);
+    const raw = await scrapePublicProfiles(linkedinUrl, instagramUrl, {
+      name,
+      headline,
+      location,
+      avatarUrl,
+      industry
+    });
+
     const synthesizedPerson = synthesizeAgentFromSources(raw);
 
     return NextResponse.json({
