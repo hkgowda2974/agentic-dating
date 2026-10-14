@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Kismet AI — Autonomous Agentic Dating Platform
 
-## Getting Started
+> An agentic dating platform where every person is represented by an AI agent synthesized strictly from their public **LinkedIn** and **Instagram** profiles. The agents date each other on their humans' behalf, evaluate chemistry, and generate global compatibility rankings.
 
-First, run the development server:
+---
 
+## 🌟 Key Features
+
+1. **27 Real Public Figures**:
+   - Verified candidates (e.g. Sam Altman, Mira Murati, Brian Chesky, Sara Blakely, Andrej Karpathy, Dylan Field, Karri Saarinen, etc.) with clickable, verified public LinkedIn and Instagram profiles.
+2. **Dual-Source Analysis**:
+   - Strictly two data sources per person: LinkedIn (career trajectory, values, intellectual focus) + Instagram (visual aesthetic, lifestyle, hobbies, energy).
+   - Generates an in-depth Agent Profile displaying **Needs**, **Hobbies**, **Interests**, and **Qualities**.
+3. **Interactive Date Theater**:
+   - Watch agents date in real-time across ambient venues with speech bubbles, secret inner agent thoughts, live chemistry meters, and post-date verdicts.
+4. **Empirical Compatibility Rankings**:
+   - Global match matrix providing ranked compatibility (#1 to #26) for each person, with multidimensional breakdowns and narrative rationales.
+5. **Live Candidate Ingestion Pipeline**:
+   - Paste any public LinkedIn and Instagram URL to synthesize a new agent on the fly, simulate dates against the pool, and view dynamic rankings.
+
+---
+
+## 🚀 Getting Started
+
+### 1. Install Dependencies
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Run the Development Server
+```bash
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) to view the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 3. Build for Production
+```bash
+npm run build
+npm run start
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 📦 Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+├── src/
+│   ├── app/
+│   │   ├── api/scrape/route.ts       # Public link metadata extraction & agent synthesis
+│   │   ├── globals.css               # Dark-mode styling & aesthetics
+│   │   ├── layout.tsx                # Metadata & root layout
+│   │   └── page.tsx                  # Unified responsive UI (Profiles, Theater, Rankings)
+│   ├── components/
+│   │   ├── DateTheater.tsx           # Interactive date simulation player
+│   │   ├── LiveAgentCreator.tsx      # Modal to paste links and add candidates
+│   │   ├── Navbar.tsx                # Header navigation & metrics
+│   │   ├── ProfileCard.tsx           # Individual person card with source links
+│   │   ├── ProfileModal.tsx          # Full profile inspection (Sources + Agent reading)
+│   │   └── RankingsView.tsx          # Compatibility leaderboard for every person
+│   ├── data/
+│   │   └── candidates.ts             # 27 verified candidates with real social links
+│   ├── lib/
+│   │   ├── agent-dating-engine.ts    # Date simulation & pairwise ranking algorithm
+│   │   └── scraper.ts                # Dual-source parsing & agent synthesizer
+│   └── types/
+│       └── dating.ts                 # TypeScript interfaces
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📝 Submission Responses
 
-## Deploy on Vercel
+### Overall Explanation (196 / 200 chars)
+Autonomous agentic dating platform where AI agents, synthesized strictly from 25+ real people's public LinkedIn & Instagram profiles, date on their behalf and compute empirical compatibility rankings.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Technical Section (489 / 500 chars)
+We built an asynchronous dual-source extraction pipeline using Node.js fetch with OpenGraph and JSON-LD schema parsing. For LinkedIn, it extracts professional roles, industry tags, and career trajectories from public metadata tags. For Instagram, it parses public OpenGraph bio entities, aesthetic descriptors, and lifestyle keywords. These signals are fed into an agent synthesizer that generates structured Needs, Hobbies, Interests, and Qualities with zero external data dependencies.
